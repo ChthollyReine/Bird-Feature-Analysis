@@ -58,9 +58,15 @@ def _haralick(mat):
                 energy=energy, correlation=correlation, entropy=entropy)
 
 
-def glcm_features(gray):
-    """返回多角度/多距离平均后的 GLCM 特征"""
+def glcm_features(gray, mask=None):
+    """返回多角度/多距离平均后的 GLCM 特征
+
+    mask: 可选前景掩膜（255=前景），传入时背景像素置 0，避免背景纹理污染。
+    """
     cfg = config.GLCM
+    if mask is not None and mask.any():
+        gray = gray.copy()
+        gray[mask == 0] = 0
     q = _quantize(gray, cfg["levels"])
     acc = {k: 0.0 for k in
            ("contrast", "dissimilarity", "homogeneity", "energy", "correlation", "entropy")}

@@ -16,10 +16,10 @@ def extract_all(img_bgr, mask=None):
 
     gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
 
-    feats.update(texture.glcm_features(gray))
-    feats.update(fractal.fractal_features(gray))
+    feats.update(texture.glcm_features(gray, mask=mask))
+    feats.update(fractal.fractal_features(gray, mask=mask))
     feats.update(symmetry.symmetry_features(gray))
-    feats.update(color_shape.color_features(img_bgr))
+    feats.update(color_shape.color_features(img_bgr, mask=mask))
     feats.update(color_shape.shape_features(mask))
 
     return feats

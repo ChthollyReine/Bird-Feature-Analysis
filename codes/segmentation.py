@@ -50,10 +50,12 @@ def grabcut_mask(img_bgr, bbox=None, iter_count=None):
 
 
 def _cleanup(mask):
-    """形态学后处理：填洞、去噪，并保留最大连通域。"""
+    """形态学后处理：填洞、去噪、腐蚀去边缘背景，并保留最大连通域。"""
     k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k, iterations=2)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k, iterations=1)
+    # 腐蚀：向内收缩掩膜边界，去除 GrabCut 误判的边缘背景像素
+    mask = cv2.erode(mask, k, iterations=1)
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:

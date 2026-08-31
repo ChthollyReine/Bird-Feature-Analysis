@@ -5,8 +5,11 @@ import numpy as np
 from .. import config
 
 
-def color_features(img_bgr):
-    """HSV 各通道归一化直方图 + 均值/标准差"""
+def color_features(img_bgr, mask=None):
+    """HSV 各通道归一化直方图 + 均值/标准差
+
+    mask: 可选前景掩膜（255=前景），传入时仅统计前景区域像素，避免背景环境污染颜色特征。
+    """
     cfg = config.COLOR
     hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
     feats = {}
@@ -14,14 +17,24 @@ def color_features(img_bgr):
     bins = (cfg["h_bins"], cfg["s_bins"], cfg["v_bins"])
     names = ("h", "s", "v")
     for ch, name, n_bins in zip(cv2.split(hsv), names, bins):
-        hist = cv2.calcHist([ch], [0], None, [n_bins], [0, 256])
+        if mask is not None and mask.any():
+            # 仅统计前景区域像素
+            fg_pixels = ch[mask > 0]
+            hist = cv2.calcHist([fg_pixels], [0], None, [n_bins], [0, 256])
+        else:
+            hist = cv2.calcHist([ch], [0], None, [n_bins], [0, 256])
         hist = hist.ravel()
         if hist.sum() > 0:
             hist = hist / hist.sum()
         for i, val in enumerate(hist):
             feats[f"color_{name}_bin{i}"] = float(val)
-        feats[f"color_{name}_mean"] = float(ch.mean())
-        feats[f"color_{name}_std"] = float(ch.std())
+        if mask is not None and mask.any():
+            fg_pixels = ch[mask > 0]
+            feats[f"color_{name}_mean"] = float(fg_pixels.mean())
+            feats[f"color_{name}_std"] = float(fg_pixels.std())
+        else:
+            feats[f"color_{name}_mean"] = float(ch.mean())
+            feats[f"color_{name}_std"] = float(ch.std())
 
     return feats
 
