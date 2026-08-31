@@ -1,0 +1,20 @@
+# 大型/第三方数据集（请自行下载，勿提交）
+data/archive.zip
+data/AVONET Supplementary dataset 1.xlsx
+data/~$*
+
+# 运行生成产物
+output/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Streamlit
+.streamlit/
+
+# IDE
+.vscode/
+.idea/
