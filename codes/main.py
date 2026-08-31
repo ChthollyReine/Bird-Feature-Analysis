@@ -6,7 +6,7 @@ import random
 
 import numpy as np
 import matplotlib
-matplotlib.use("Agg")  # 无显示环境保存图片
+matplotlib.use("Agg")  
 import matplotlib.pyplot as plt
 
 from . import config
@@ -18,11 +18,12 @@ from .features import extract_all
 
 
 def set_seed(seed=config.SEED):
-    """固定随机种子，保证可复现。"""
+    """固定随机种子，保证可复现"""
     random.seed(seed)
     np.random.seed(seed)
 
 
+"""主流程:生态图像特征工程与轻量级量化评价"""
 def run():
     set_seed()
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -38,8 +39,8 @@ def run():
     for img_id, label in subset:
         img = ds.load_image(img_id)
         bbox = ds.bounding_box(img_id)
-        img = preprocessing.preprocess(img, bbox=bbox)
-        mask, _ = segmentation.segment(img)
+        img, bbox = preprocessing.preprocess(img, bbox=bbox)
+        mask, _ = segmentation.segment(img, bbox=bbox)
         feats = extract_all(img, mask=mask)
         feature_dicts.append(feats)
         labels.append(label)
@@ -70,7 +71,7 @@ def run():
 
 
 def _save_scatter(coords, labels, path):
-    """保存 PCA 二维散点图，颜色按类别标注。"""
+    """保存 PCA 二维散点图,颜色按类别标注"""
     plt.figure(figsize=(8, 6))
     for lb in sorted(set(labels)):
         idx = [i for i, l in enumerate(labels) if l == lb]
@@ -86,7 +87,7 @@ def _save_scatter(coords, labels, path):
 
 
 def _save_features(feature_names, feature_dicts, labels, path):
-    """把特征矩阵落盘为 CSV，便于后续复现与生态映射。"""
+    """把特征矩阵落盘为 CSV,便于后续复现与生态映射"""
     header = ["image_id", "label"] + feature_names
     rows = []
     for i, (d, lb) in enumerate(zip(feature_dicts, labels)):

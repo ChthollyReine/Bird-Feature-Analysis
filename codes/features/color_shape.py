@@ -1,4 +1,4 @@
-"""颜色与形貌特征：HSV 直方图统计 + 轮廓几何描述。"""
+"""颜色与形貌特征:HSV 直方图统计 + 轮廓几何描述"""
 import cv2
 import numpy as np
 
@@ -6,7 +6,7 @@ from .. import config
 
 
 def color_features(img_bgr):
-    """HSV 各通道归一化直方图 + 均值/标准差。"""
+    """HSV 各通道归一化直方图 + 均值/标准差"""
     cfg = config.COLOR
     hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
     feats = {}
@@ -27,9 +27,9 @@ def color_features(img_bgr):
 
 
 def shape_features(mask):
-    """基于前景掩膜轮廓的形貌特征。
+    """基于前景掩膜轮廓的形貌特征
 
-    mask 为 None 时返回空特征（或全 0），保证特征键一致性由调用方维护。
+    mask 为 None 时返回空特征 , 保证特征键一致性 
     """
     keys = ["shape_area", "shape_perimeter", "shape_circularity",
             "shape_aspect_ratio", "shape_solidity", "shape_extent"]

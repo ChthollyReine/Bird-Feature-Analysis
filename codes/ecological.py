@@ -220,8 +220,6 @@ CUB_TO_SCIENTIFIC = {
     200: ("Common_Yellowthroat", "Geothlypis trichas", ""),
 }
 
-
-# CUB 俗名 -> 中文名（参考公开名录整理，个别为机翻，可按需校正）
 CUB_COMMON_CN = {
     "Black_footed_Albatross": "黑脚信天翁",
     "Laysan_Albatross": "莱岛信天翁",

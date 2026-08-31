@@ -1,14 +1,11 @@
-"""纹理特征：灰度共生矩阵（GLCM）+ Haralick 统计量。
-
-纯 numpy 实现，不用 skimage，符合"OpenCV 基础算子组合"约束。
-"""
+"""纹理特征:灰度共生矩阵(GLCM) + Haralick 统计量"""
 import numpy as np
 
 from .. import config
 
 
 def _quantize(gray, levels):
-    """灰度量化到 [0, levels-1]。"""
+    """灰度量化到 [0, levels-1]"""
     gray = gray.astype(np.float32)
     lo, hi = gray.min(), gray.max()
     if hi - lo < 1e-6:
@@ -18,7 +15,7 @@ def _quantize(gray, levels):
 
 
 def _cooccurrence(q, levels, dx, dy):
-    """计算指定偏移 (dx, dy) 下的共生矩阵。"""
+    """计算指定偏移 (dx, dy) 下的共生矩阵"""    
     h, w = q.shape
     # 源与目标区域的对齐切片
     src = q[max(0, -dy):h - max(0, dy), max(0, -dx):w - max(0, dx)]
@@ -29,7 +26,7 @@ def _cooccurrence(q, levels, dx, dy):
 
 
 def _haralick(mat):
-    """从共生矩阵计算 Haralick 纹理统计量。"""
+    """从共生矩阵计算 Haralick 纹理统计量"""
     total = mat.sum()
     if total == 0:
         return dict(contrast=0.0, dissimilarity=0.0, homogeneity=0.0,
@@ -62,7 +59,7 @@ def _haralick(mat):
 
 
 def glcm_features(gray):
-    """返回多角度/多距离平均后的 GLCM 特征。"""
+    """返回多角度/多距离平均后的 GLCM 特征"""
     cfg = config.GLCM
     q = _quantize(gray, cfg["levels"])
     acc = {k: 0.0 for k in

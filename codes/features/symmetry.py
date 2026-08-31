@@ -1,6 +1,6 @@
-"""对称性特征：对称轴检测与两边纹理相关性。
+"""对称性特征:对称轴检测与两边纹理相关性
 
-量化动物体表图案的对称程度，用于生态适应性的形态分析。
+量化动物体表图案的对称程度，用于生态适应性的形态分析
 """
 import numpy as np
 import cv2
@@ -9,7 +9,7 @@ from . import texture
 
 
 def _half_corr(gray, axis="vertical"):
-    """计算左右（vertical 轴）或上下（horizontal 轴）两半的归一化互相关系数。"""
+    """计算左右(vertical 轴)或上下(horizontal 轴)两半的归一化互相关系数"""
     h, w = gray.shape
     if axis == "vertical":
         half = w // 2
@@ -32,7 +32,7 @@ def _half_corr(gray, axis="vertical"):
 
 
 def _bilateral_texture_corr(gray):
-    """两边纹理相关性：左右两半各自提取 GLCM 特征向量后计算 Pearson 相关。"""
+    """两边纹理相关性：左右两半各自提取 GLCM 特征向量后计算 Pearson 相关""" 
     h, w = gray.shape
     half = w // 2
     left = gray[:, :half]
@@ -50,7 +50,7 @@ def _bilateral_texture_corr(gray):
 
 
 def symmetry_axis(gray):
-    """粗略检测对称轴：以左右翻转互相关峰值位置估计竖直对称轴偏移。"""
+    """粗略检测对称轴：以左右翻转互相关峰值位置估计竖直对称轴偏移"""
     h, w = gray.shape
     g = gray.astype(np.float64)
     best_corr, best_shift = -1.0, 0
@@ -70,7 +70,7 @@ def symmetry_axis(gray):
 
 
 def symmetry_features(gray):
-    """返回对称性特征字典。"""
+    """返回对称性特征字典"""
     shift, axis_corr = symmetry_axis(gray)
     lr = _half_corr(gray, axis="vertical")
     tb = _half_corr(gray, axis="horizontal")

@@ -1,11 +1,11 @@
-"""分形维数特征：Box-counting 方法估计图案复杂度。"""
+"""分形维数特征:Box-counting 方法估计图案复杂度"""
 import numpy as np
 
 from .. import config
 
 
 def _count_boxes(binary, s):
-    """向量化统计覆盖前景像素的 s×s 盒子数量。"""
+    """向量化统计覆盖前景像素的 s*s 盒子数量"""
     h, w = binary.shape
     h2 = ((h + s - 1) // s) * s
     w2 = ((w + s - 1) // s) * s
@@ -34,7 +34,7 @@ def box_counting_dimension(binary, box_sizes=None):
 
 
 def fractal_features(gray):
-    """返回基于二值化图案的分形维数特征。"""
+    """返回基于二值化图案的分形维数特征""" 
     thr = config.FRACTAL["threshold"]
     _, binary = _threshold(gray, thr)
     binary = binary.astype(bool)
@@ -45,6 +45,5 @@ def fractal_features(gray):
 
 
 def _threshold(gray, thr):
-    """简单阈值（无依赖实现，便于独立使用）。"""
     binary = (gray > thr).astype(np.uint8) * 255
     return binary, binary

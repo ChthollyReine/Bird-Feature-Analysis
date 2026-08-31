@@ -1,6 +1,6 @@
 """全局配置：路径、随机种子、算法参数。
 
-可复现性要求：所有随机性（抽样、聚类初始化、PCA 无随机性）统一由 SEED 控制。
+可复现性要求:所有随机性(抽样、聚类初始化、PCA 无随机性)统一由 SEED 控制
 """
 from pathlib import Path
 
@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 # 数据
 DATA_ZIP = ROOT / "data" / "archive.zip"
-SAMPLE_ZIP = ROOT / "data" / "sample_images.zip"  # 精简版：每类 1 张，供云端展示缩略图
+SAMPLE_ZIP = ROOT / "data" / "sample_images.zip"  # 精简版：每类 1 张，云端展示缩略图
 CUB_PREFIX = "CUB_200_2011"
 
 # 输出目录
@@ -29,12 +29,13 @@ PREPROCESS = {
     "bilateral_sigma_space": 75,
     "clahe_clip": 2.0,
     "clahe_grid": (8, 8),
+    "bbox_pad": 0.35,   # 边界框外扩比例，为分割保留背景上下文
 }
 
 # 分割参数
 SEGMENT = {
-    "blur_ksize": 5,
-    "morph_open_ksize": 3,
+    "blur_ksize": 5,        # Otsu 后备方案的高斯模糊核
+    "grabcut_iter": 5,      # GrabCut 迭代次数
 }
 
 # 灰度共生矩阵（GLCM）参数

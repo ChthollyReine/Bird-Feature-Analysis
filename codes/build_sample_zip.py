@@ -1,7 +1,7 @@
 """从 archive.zip 为每个物种抽取 1 张图片，生成精简 sample_images.zip。
 
-用途：完整数据集（archive.zip，约 1.49GB）不提交到 Git，云端/演示环境用这份精简包
-（200 张图 + 对应标注）即可在界面展示缩略图。
+用途：
+    生成200张图+对应标注，即可在界面展示缩略图。
 
 用法：
     python -m codes.build_sample_zip

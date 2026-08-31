@@ -24,7 +24,7 @@ from . import ecological
 from .features import extract_all
 
 
-# 连续性/有序性状（用于相关性分析）
+# 连续性/有序性状
 CONTINUOUS_TRAITS = [
     "Mass", "Beak.Length_Culmen", "Beak.Width", "Beak.Depth",
     "Tarsus.Length", "Wing.Length", "Hand-Wing.Index", "Tail.Length",
@@ -47,7 +47,7 @@ KEY_FEATURES = [
 def extract_species_features(per_class=5, seed=config.SEED, verbose=True):
     """对全部 200 类各抽 per_class 张，聚合为每类特征均值。
 
-    返回 species_df（index=class_id，列为特征均值）。
+    返回 species_df(index=class_id, columns=特征均值)
     """
     ds = data_loader.CUBDataset()
     subset = ds.sample_all_classes(per_class=per_class, seed=seed)
@@ -56,8 +56,8 @@ def extract_species_features(per_class=5, seed=config.SEED, verbose=True):
     for i, (img_id, label) in enumerate(subset):
         img = ds.load_image(img_id)
         bbox = ds.bounding_box(img_id)
-        img = preprocessing.preprocess(img, bbox=bbox)
-        mask, _ = segmentation.segment(img)
+        img, bbox = preprocessing.preprocess(img, bbox=bbox)
+        mask, _ = segmentation.segment(img, bbox=bbox)
         feats = extract_all(img, mask=mask)
         accum[label].append(feats)
         if verbose and (i + 1) % 200 == 0:
@@ -70,7 +70,7 @@ def extract_species_features(per_class=5, seed=config.SEED, verbose=True):
 
 
 def build_joined(species_df):
-    """把物种级特征与 AVONET 性状合并为一张表。"""
+    """把物种级特征与 AVONET 性状合并为一张表"""
     avonet = ecological.load_avonet()
     mapping = ecological.build_mapping_frame()[["class_id", "cub_name", "scientific_name"]]
     joined = (
@@ -82,7 +82,7 @@ def build_joined(species_df):
 
 
 def correlate(joined, feature_cols):
-    """Spearman 相关性：连续性状 × 图案特征，返回按 p 值排序的长表。"""
+    """Spearman 相关性：连续性状 X 图案特征，返回按 p 值排序的长表"""
     results = []
     for trait in CONTINUOUS_TRAITS:
         if trait not in joined.columns:
@@ -102,7 +102,7 @@ def correlate(joined, feature_cols):
 
 
 def group_compare(joined):
-    """分组比较：关键特征在各类别性状下的差异（Kruskal-Wallis 检验）。"""
+    """分组比较:关键特征在各类别性状下的差异(Kruskal-Wallis 检验)"""     
     rows = []
     for trait in CATEGORICAL_TRAITS:
         if trait not in joined.columns:
@@ -122,7 +122,7 @@ def group_compare(joined):
 
 
 def _save_heatmap(joined, feature_cols, path):
-    """保存 关键特征 × 连续性状 的 Spearman 相关热图。"""
+    """保存 关键特征 X 连续性状 的 Spearman 相关热图"""
     feats = [f for f in KEY_FEATURES if f in feature_cols]
     traits = [t for t in CONTINUOUS_TRAITS if t in joined.columns]
     mat = np.full((len(feats), len(traits)), np.nan)
@@ -148,7 +148,7 @@ def _save_heatmap(joined, feature_cols, path):
 
 
 def _save_scatter(joined, path):
-    """示例散点：分形复杂度 vs 体重、左右对称 vs 迁徙。"""
+    """示例散点：分形复杂度 vs 体重、左右对称 vs 迁徙"""
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 
     mass = pd.to_numeric(joined["Mass"], errors="coerce")
@@ -182,7 +182,7 @@ def run(per_class=5):
     joined.to_csv(out_csv, index=False, encoding="utf-8")
     print(f"   已保存: {out_csv}")
 
-    print("== 3. 相关性分析（Spearman，特征 × 性状）==")
+    print("== 3. 相关性分析（Spearman，特征 X 性状）==")
     corr = correlate(joined, feature_cols)
     sig = corr[corr["p"] < 0.05]
     print(f"   显著相关对(p<0.05): {len(sig)} / {len(corr)}")
@@ -210,9 +210,11 @@ FEATURE_NAMES = _default_feature_names()
 
 
 def load_feature_library(csv_path=None):
-    """加载物种特征库，返回 (df, feature_cols, scaler)。
+    """加载物种特征库，返回 (df, feature_cols, scaler)
 
-    df 即 species_features_traits.csv（200 行：特征 + AVONET 性状）。
+    df 即 species_features_traits.csv(200 行：特征 + AVONET 性状)
+    feature_cols 为 FEATURE_NAMES 中存在的特征列名
+    scaler 为 StandardScaler,已对特征列进行 fit
     """
     csv_path = str(csv_path or (config.OUTPUT_DIR / "species_features_traits.csv"))
     df = pd.read_csv(csv_path)
@@ -223,7 +225,7 @@ def load_feature_library(csv_path=None):
 
 
 def predict_species(feature_dict, df=None, feature_cols=None, scaler=None, top_k=3):
-    """标准化欧氏距离最近邻，返回最相似物种（含其特征与 AVONET 性状，top_k 行）。"""
+    """标准化欧氏距离最近邻，返回最相似物种（含其特征与 AVONET 性状,top_k 行）"""  
     from scipy.spatial.distance import cdist
 
     if df is None:

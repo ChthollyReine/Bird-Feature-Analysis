@@ -118,8 +118,8 @@ def process_image(file_bytes):
     img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
     if img is None:
         return None
-    img = preprocessing.preprocess(img)
-    mask, masked = segmentation.segment(img)
+    img, bbox = preprocessing.preprocess(img)
+    mask, masked = segmentation.segment(img, bbox=bbox)
     feats = extract_all(img, mask=mask)
     return img, mask, masked, feats
 
@@ -304,7 +304,6 @@ CONTINUOUS_TRAITS = [
 ]
 
 TRAIT_LABEL = {t[1]: t[0] for t in TRAIT_DISPLAY}
-# 补充相关性热图中出现的其余性状的中文名
 TRAIT_LABEL.update({
     "Beak.Width": "喙宽",
     "Beak.Depth": "喙高",
