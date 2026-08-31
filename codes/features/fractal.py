@@ -36,7 +36,7 @@ def box_counting_dimension(binary, box_sizes=None):
 def fractal_features(gray, mask=None):
     """返回基于二值化图案的分形维数特征
 
-    mask: 可选前景掩膜（255=前景），传入时背景像素置 0。
+    mask: 可选前景掩膜(255=前景)，传入时背景像素置 0
     """
     thr = config.FRACTAL["threshold"]
     if mask is not None and mask.any():

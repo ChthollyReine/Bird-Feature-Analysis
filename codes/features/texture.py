@@ -4,22 +4,38 @@ import numpy as np
 from .. import config
 
 
-def _quantize(gray, levels):
-    """灰度量化到 [0, levels-1]"""
+def _quantize(gray, levels, lo=None, hi=None):
+    """灰度量化到 [0, levels-1]。提供 lo/hi 时用前景像素范围做归一化。"""
     gray = gray.astype(np.float32)
-    lo, hi = gray.min(), gray.max()
+    if lo is None:
+        lo = gray.min()
+    if hi is None:
+        hi = gray.max()
     if hi - lo < 1e-6:
         return np.zeros_like(gray, dtype=np.int64)
     q = np.floor((gray - lo) / (hi - lo) * (levels - 1)).astype(np.int64)
     return np.clip(q, 0, levels - 1)
 
 
-def _cooccurrence(q, levels, dx, dy):
-    """计算指定偏移 (dx, dy) 下的共生矩阵"""    
+def _cooccurrence(q, levels, dx, dy, fg=None):
+    """计算指定偏移 (dx, dy) 下的共生矩阵。
+
+    fg: 可选布尔前景掩膜，传入时仅统计「源、目标均为前景」的像素对，
+        避免背景像素污染纹理统计。
+    """
     h, w = q.shape
     # 源与目标区域的对齐切片
     src = q[max(0, -dy):h - max(0, dy), max(0, -dx):w - max(0, dx)]
     dst = q[max(0, dy):h - max(0, -dy), max(0, dx):w - max(0, -dx)]
+    if fg is not None:
+        fs = fg[max(0, -dy):h - max(0, dy), max(0, -dx):w - max(0, dx)]
+        fd = fg[max(0, dy):h - max(0, -dy), max(0, dx):w - max(0, -dx)]
+        sel = fs & fd
+        src = src[sel]
+        dst = dst[sel]
+    else:
+        src = src.ravel()
+        dst = dst.ravel()
     idx = src.ravel() * levels + dst.ravel()
     mat = np.bincount(idx, minlength=levels * levels).reshape(levels, levels)
     return mat
@@ -61,13 +77,17 @@ def _haralick(mat):
 def glcm_features(gray, mask=None):
     """返回多角度/多距离平均后的 GLCM 特征
 
-    mask: 可选前景掩膜（255=前景），传入时背景像素置 0，避免背景纹理污染。
+    mask: 可选前景掩膜（255=前景）。传入时仅对前景像素计算共生矩阵，
+          并以前景灰度范围做量化，彻底排除背景纹理污染。
     """
     cfg = config.GLCM
+    fg = None
+    lo = hi = None
     if mask is not None and mask.any():
-        gray = gray.copy()
-        gray[mask == 0] = 0
-    q = _quantize(gray, cfg["levels"])
+        fg = mask > 0
+        vals = gray[fg]
+        lo, hi = vals.min(), vals.max()
+    q = _quantize(gray, cfg["levels"], lo=lo, hi=hi)
     acc = {k: 0.0 for k in
            ("contrast", "dissimilarity", "homogeneity", "energy", "correlation", "entropy")}
     n = 0
@@ -76,7 +96,7 @@ def glcm_features(gray, mask=None):
             rad = np.deg2rad(ang)
             dx = int(round(d * np.cos(rad)))
             dy = int(round(d * np.sin(rad)))
-            mat = _cooccurrence(q, cfg["levels"], dx, dy)
+            mat = _cooccurrence(q, cfg["levels"], dx, dy, fg=fg)
             feats = _haralick(mat)
             for k in acc:
                 acc[k] += feats[k]

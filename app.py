@@ -15,9 +15,8 @@ import pandas as pd
 import cv2
 import matplotlib
 matplotlib.use("Agg")
+from codes import matplotlib_font  # noqa: E402 注册项目内置中文字体
 import matplotlib.pyplot as plt
-plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "sans-serif"]
-plt.rcParams["axes.unicode_minus"] = False
 import streamlit as st
 
 # 保证以项目根目录运行时能导入 codes 包
@@ -164,6 +163,27 @@ TRAIT_DISPLAY = [
     ("分布范围", "Range.Size", "km²", "地理分布范围总面积"),
 ]
 
+# 生态指标估计：连续型指标（label, 字段, 单位）
+ESTIMATE_NUMERIC_DISPLAY = [
+    ("体重", "Mass", "g"),
+    ("翅长", "Wing.Length", "mm"),
+    ("手翼指数 HWI", "Hand-Wing.Index", ""),
+    ("喙长", "Beak.Length_Culmen", "mm"),
+    ("跗跖长", "Tarsus.Length", "mm"),
+    ("尾长", "Tail.Length", "mm"),
+]
+
+# 生态指标估计：类别型指标（label, 字段）
+ESTIMATE_CATEGORICAL_DISPLAY = [
+    ("栖息地", "Habitat"),
+    ("食性", "Trophic.Niche"),
+    ("生活方式", "Primary.Lifestyle"),
+    ("迁徙", "Migration"),
+]
+
+# 生态指标估计：基于特征最相似的样本数量
+ESTIMATE_TOPK = 20
+
 
 def render_traits(row):
     """用 st.metric 展示某物种的生态性状"""
@@ -256,8 +276,8 @@ def page_browse(df, feature_cols):
 
 
 def page_analyze(df, feature_cols, scaler):
-    st.header("🖼️ 图像分析与物种识别")
-    st.caption("上传鸟类图像，自动运行 预处理 → 分割 → 特征提取，并匹配最相似物种输出生态指标。")
+    st.header("🖼️ 图像分析与生态指标估计")
+    st.caption("上传鸟类图像，自动运行 预处理 → 分割 → 特征提取，并基于特征最相似的样本估计生态指标范围。")
 
     files = st.file_uploader("选择鸟类图像", type=["jpg", "jpeg", "png"],
                              accept_multiple_files=True)
@@ -284,16 +304,24 @@ def page_analyze(df, feature_cols, scaler):
         st.markdown("**图案评价指标**")
         render_metrics(feats)
 
-        st.markdown("**最近物种匹配**")
-        top = ecological_analysis.predict_species(feats, df, feature_cols, scaler, top_k=3)
-        best = top.iloc[0]
-        st.success(f"识别结果：{best['中文名']}（{best['cub_name']} / {best['scientific_name']}），距离 {best['distance']:.3f}")
-        st.markdown("**该物种生态指标（AVONET）**")
-        render_traits(best)
+        st.markdown(f"**生态指标估计**（基于特征最相似的 {ESTIMATE_TOPK} 个物种样本）")
+        _, numeric, categorical = ecological_analysis.estimate_ecological_traits(
+            feats, df, feature_cols, scaler, top_k=ESTIMATE_TOPK
+        )
 
-        st.markdown("**Top-3 候选**")
-        st.dataframe(top[["class_id", "中文名", "cub_name", "scientific_name", "distance"]],
-                     use_container_width=True)
+        for label, trait, unit in ESTIMATE_NUMERIC_DISPLAY:
+            if trait in numeric:
+                r = numeric[trait]
+                u = f" {unit}" if unit else ""
+                st.markdown(
+                    f"- **{label}**：平均 {r['mean']:.1f}{u}，范围 {r['min']:.1f} ~ {r['max']:.1f}{u}"
+                )
+
+        for label, trait in ESTIMATE_CATEGORICAL_DISPLAY:
+            if trait in categorical:
+                c = categorical[trait]
+                val = translate(trait, c["mode"])
+                st.markdown(f"- **{label}**：{val}（{c['ratio'] * 100:.0f}% 的相似样本）")
 
 
 # ---------------------------------------------------------------- 机理解释

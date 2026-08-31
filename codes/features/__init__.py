@@ -18,7 +18,7 @@ def extract_all(img_bgr, mask=None):
 
     feats.update(texture.glcm_features(gray, mask=mask))
     feats.update(fractal.fractal_features(gray, mask=mask))
-    feats.update(symmetry.symmetry_features(gray))
+    feats.update(symmetry.symmetry_features(gray, mask=mask))
     feats.update(color_shape.color_features(img_bgr, mask=mask))
     feats.update(color_shape.shape_features(mask))
 

@@ -1,7 +1,7 @@
-"""第 7 步：生态指标映射与机理解释。
+"""第 7 步：生态指标映射与机理解释
 
-把图像图案特征按物种聚合，与 AVONET 形态/生态性状做相关性分析与分组比较，
-输出可解释结论与图表。
+把图像图案特征按物种聚合，与 AVONET 形态/生态性状做相关性分析与分组比较
+输出可解释结论与图表
 
 用法：
     python -m codes.ecological_analysis
@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
+from . import matplotlib_font 
 import matplotlib.pyplot as plt
 from scipy import stats
 from sklearn.preprocessing import StandardScaler
@@ -33,6 +34,16 @@ CONTINUOUS_TRAITS = [
 
 # 类别性状（用于分组比较）
 CATEGORICAL_TRAITS = ["Habitat", "Trophic.Niche", "Primary.Lifestyle"]
+
+# 生态指标估计：连续型形态/生态指标（用于上传图的生态指标估计）
+ESTIMATE_NUMERIC_TRAITS = [
+    "Mass", "Wing.Length", "Hand-Wing.Index",
+    "Beak.Length_Culmen", "Beak.Width", "Beak.Depth",
+    "Tarsus.Length", "Tail.Length",
+]
+
+# 生态指标估计：类别型生态指标
+ESTIMATE_CATEGORICAL_TRAITS = ["Habitat", "Trophic.Niche", "Primary.Lifestyle", "Migration"]
 
 # 用于展示/解读的关键图案特征
 KEY_FEATURES = [
@@ -182,13 +193,13 @@ def run(per_class=5):
     joined.to_csv(out_csv, index=False, encoding="utf-8")
     print(f"   已保存: {out_csv}")
 
-    print("== 3. 相关性分析（Spearman，特征 X 性状）==")
+    print("== 3. 相关性分析(Spearman,特征 X 性状)==")
     corr = correlate(joined, feature_cols)
     sig = corr[corr["p"] < 0.05]
     print(f"   显著相关对(p<0.05): {len(sig)} / {len(corr)}")
     print(sig[["trait", "feature", "rho", "p", "n"]].head(20).to_string(index=False))
 
-    print("== 4. 分组比较（Kruskal-Wallis）==")
+    print("== 4. 分组比较(Kruskal-Wallis)==")
     gc = group_compare(joined)
     sig_gc = gc[gc["kruskal_p"] < 0.05]
     print(sig_gc[["trait", "feature", "kruskal_p", "n_groups"]].head(15).to_string(index=False))
@@ -201,7 +212,7 @@ def run(per_class=5):
 
 
 def _default_feature_names():
-    """从空样例图推导全部特征名（与 extract_all 输出一致，共 49 维）。"""
+    """从空样例图推导全部特征名"""
     img = np.zeros((16, 16, 3), dtype=np.uint8)
     return list(extract_all(img, None).keys())
 
@@ -224,8 +235,18 @@ def load_feature_library(csv_path=None):
     return df, feature_cols, scaler
 
 
-def predict_species(feature_dict, df=None, feature_cols=None, scaler=None, top_k=3):
-    """标准化欧氏距离最近邻，返回最相似物种（含其特征与 AVONET 性状,top_k 行）"""  
+def estimate_ecological_traits(feature_dict, df=None, feature_cols=None, scaler=None, top_k=20):
+    """基于特征相似样本的生态指标估计。
+
+    在标准化特征空间里找与上传图最接近的 top_k 个物种，对其生态指标做统计：
+    - 连续指标 -> 均值 + 范围（min~max）
+    - 类别指标 -> 众数 + 占比
+
+    返回 (neighbors, numeric, categorical)：
+      neighbors:    最接近的 top_k 个物种 DataFrame（含 distance 列）
+      numeric:      {trait: {"mean", "min", "max"}}
+      categorical:  {trait: {"mode", "ratio"}}
+    """
     from scipy.spatial.distance import cdist
 
     if df is None:
@@ -237,9 +258,36 @@ def predict_species(feature_dict, df=None, feature_cols=None, scaler=None, top_k
     d = cdist(qs, Xs, metric="euclidean").ravel()
 
     order = np.argsort(d)[:top_k]
-    top = df.iloc[order].copy()
-    top["distance"] = d[order]
-    return top
+    neighbors = df.iloc[order].copy()
+    neighbors["distance"] = d[order]
+
+    numeric = {}
+    for trait in ESTIMATE_NUMERIC_TRAITS:
+        if trait not in neighbors.columns:
+            continue
+        vals = pd.to_numeric(neighbors[trait], errors="coerce").dropna()
+        if vals.empty:
+            continue
+        numeric[trait] = {
+            "mean": float(vals.mean()),
+            "min": float(vals.min()),
+            "max": float(vals.max()),
+        }
+
+    categorical = {}
+    for trait in ESTIMATE_CATEGORICAL_TRAITS:
+        if trait not in neighbors.columns:
+            continue
+        s = neighbors[trait].dropna()
+        if s.empty:
+            continue
+        counts = s.value_counts()
+        categorical[trait] = {
+            "mode": str(counts.index[0]),
+            "ratio": float(counts.iloc[0] / len(s)),
+        }
+
+    return neighbors, numeric, categorical
 
 
 if __name__ == "__main__":
