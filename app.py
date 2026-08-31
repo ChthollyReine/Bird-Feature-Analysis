@@ -154,19 +154,19 @@ FEATURE_DESC = {
 
 # AVONET 生态性状（label, 字段, 单位, 说明）
 TRAIT_DISPLAY = [
-    ("体重", "Mass", "g", "平均体重（AVONET）"),
-    ("喙长", "Beak.Length_Culmen", "mm", "上喙（culmen）长度"),
-    ("翅长", "Wing.Length", "mm", "翅长"),
+    ("体重", "Mass", "g", "平均体重"),
+    ("喙长", "Beak.Length_Culmen", "mm", "平均上喙长度"),
+    ("翅长", "Wing.Length", "mm", "平均翅长"),
     ("栖息地", "Habitat", "", "主要栖息地类型"),
-    ("迁徙等级", "Migration", "", "1=留鸟(不迁徙) 2=部分迁徙 3=完全迁徙"),
+    ("迁徙等级", "Migration", "", "迁徙程度"),
     ("食性", "Trophic.Niche", "", "主要食性类型"),
-    ("生活方式", "Primary.Lifestyle", "", "主要生活方式（水生/陆生/空中等）"),
-    ("分布范围", "Range.Size", "km²", "地理分布范围总面积（km²）"),
+    ("生活方式", "Primary.Lifestyle", "", "主要生活方式"),
+    ("分布范围", "Range.Size", "km²", "地理分布范围总面积"),
 ]
 
 
 def render_traits(row):
-    """用 st.metric 展示某物种的生态性状（带单位与说明）。"""
+    """用 st.metric 展示某物种的生态性状"""
     cols = st.columns(4)
     for i, (label, key, unit, desc) in enumerate(TRAIT_DISPLAY):
         raw = row.get(key)
@@ -185,7 +185,7 @@ def render_traits(row):
 
 
 def render_metrics(feats):
-    """用 st.metric 展示图案评价指标（带含义说明）。"""
+    """用 st.metric 展示图案评价指标"""
     cols = st.columns(4)
     for i, (label, key) in enumerate(KEY_METRICS):
         val = feats.get(key, 0.0)
@@ -216,7 +216,7 @@ def page_browse(df, feature_cols):
 
     # ---- 浏览 / 检索
     st.subheader("浏览与检索")
-    query = st.text_input("按中文名 / 俗名 / 学名检索（可留空列出全部）", "")
+    query = st.text_input("按中文名 / 俗名 / 学名检索", "")
     all_rows = df.copy()
     if query.strip():
         q = query.strip().lower()
@@ -304,11 +304,20 @@ CONTINUOUS_TRAITS = [
 ]
 
 TRAIT_LABEL = {t[1]: t[0] for t in TRAIT_DISPLAY}
+# 补充相关性热图中出现的其余性状的中文名
+TRAIT_LABEL.update({
+    "Beak.Width": "喙宽",
+    "Beak.Depth": "喙高",
+    "Tarsus.Length": "跗跖长",
+    "Hand-Wing.Index": "手翼指数(HWI)",
+    "Tail.Length": "尾长",
+    "Centroid.Latitude": "分布中心纬度",
+})
 FEATURE_LABEL = {m[1]: m[0] for m in KEY_METRICS}
 
 
 def compute_correlations(df, feature_cols):
-    """关键图案特征 × 连续性状 的 Spearman 相关，返回按 p 排序的长表。"""
+    """关键图案特征 X 连续性状 的 Spearman 相关，返回按 p 排序的长表"""
     from scipy import stats
     feats = [m[1] for m in KEY_METRICS if m[1] in feature_cols]
     rows = []
@@ -329,8 +338,9 @@ def compute_correlations(df, feature_cols):
     return pd.DataFrame(rows).sort_values("p")
 
 
+
 def plot_corr_heatmap(df, feature_cols):
-    """关键特征 × 连续性状 的 Spearman 相关热图，返回 matplotlib Figure。"""
+    """关键特征 X 连续性状 的 Spearman 相关热图，返回 matplotlib Figure"""
     from scipy import stats
     feats = [m[1] for m in KEY_METRICS if m[1] in feature_cols]
     traits = [t for t in CONTINUOUS_TRAITS if t in df.columns]
@@ -349,7 +359,7 @@ def plot_corr_heatmap(df, feature_cols):
     ax.set_yticks(range(len(feats)))
     ax.set_yticklabels([FEATURE_LABEL.get(f, f) for f in feats])
     plt.colorbar(im, ax=ax, label="Spearman rho")
-    ax.set_title("图案特征 × 生态性状（Spearman 相关）")
+    ax.set_title("图案特征 X 生态性状（Spearman 相关）")
     fig.tight_layout()
     return fig
 
