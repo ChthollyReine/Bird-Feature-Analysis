@@ -71,10 +71,11 @@ def translate(col, val):
 # ---------------------------------------------------------------- 缓存
 @st.cache_resource
 def get_dataset():
-    # 云端无 archive.zip 时返回 None，缩略图等功能自动降级
-    if not config.DATA_ZIP.exists():
-        return None
-    return data_loader.CUBDataset()
+    # 优先用完整数据集，否则回退到精简 sample_images.zip（云端部署用）
+    for path in (config.DATA_ZIP, config.SAMPLE_ZIP):
+        if path.exists():
+            return data_loader.CUBDataset(path)
+    return None
 
 
 @st.cache_data

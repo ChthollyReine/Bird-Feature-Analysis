@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 # 数据
 DATA_ZIP = ROOT / "data" / "archive.zip"
+SAMPLE_ZIP = ROOT / "data" / "sample_images.zip"  # 精简版：每类 1 张，供云端展示缩略图
 CUB_PREFIX = "CUB_200_2011"
 
 # 输出目录
