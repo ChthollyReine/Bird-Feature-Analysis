@@ -3,8 +3,10 @@ data/archive.zip
 data/AVONET Supplementary dataset 1.xlsx
 data/~$*
 
-# 运行生成产物
-output/
+# 运行生成产物（仅保留特征库 CSV 供云端部署使用）
+output/*
+!output/species_features_traits.csv
+debug.log
 
 # Python
 __pycache__/

@@ -71,6 +71,9 @@ def translate(col, val):
 # ---------------------------------------------------------------- 缓存
 @st.cache_resource
 def get_dataset():
+    # 云端无 archive.zip 时返回 None，缩略图等功能自动降级
+    if not config.DATA_ZIP.exists():
+        return None
     return data_loader.CUBDataset()
 
 
@@ -84,6 +87,8 @@ def load_library():
 @st.cache_data
 def class_first_image():
     ds = get_dataset()
+    if ds is None:
+        return {}
     first = {}
     for img_id, label in ds.id2label.items():
         first.setdefault(label, img_id)
@@ -231,10 +236,13 @@ def page_browse(df, feature_cols):
 
     col_img, col_info = st.columns([1, 2])
     with col_img:
+        ds = get_dataset()
         img_id = class_first_image().get(int(cid))
-        if img_id is not None:
-            img = get_dataset().load_image(img_id)
+        if ds is not None and img_id is not None:
+            img = ds.load_image(img_id)
             st.image(to_rgb(img), caption=row["中文名"], use_container_width=True)
+        else:
+            st.info("未提供原始数据集（archive.zip），无法显示缩略图")
     with col_info:
         st.markdown(f"**中文名**：{row['中文名']}")
         st.markdown(f"**俗名**：{row['cub_name']}")
